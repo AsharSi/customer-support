@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory, url_for 
+from flask import Flask, request, jsonify, send_from_directory, url_for, make_response
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from flask_cors import CORS
 import os
@@ -7,13 +7,16 @@ from dotenv import load_dotenv
 from openai import AzureOpenAI
 from werkzeug.utils import secure_filename
 import traceback
-from datetime import datetime
+from flask_pymongo import PyMongo  
+from datetime import datetime, timedelta
 import json
 from tenacity import retry, stop_after_attempt, wait_fixed
 from app import create_app
+import requests
+import jwt
 
 app = create_app()
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 load_dotenv()
@@ -22,11 +25,17 @@ app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), 'uploads')
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
 
+app.config["MONGO_URI"] = os.getenv("MONGO_URI")
+
 client = AzureOpenAI(
     azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
     api_key=os.getenv("AZURE_OPENAI_API_KEY"),
     api_version="2024-05-01-preview"
 )
+
+mongo = PyMongo(app)
+
+agent_collection = mongo.db.agents
 
 threads = {}
 
@@ -92,6 +101,71 @@ def new_thread():
         return jsonify({'thread_id': thread.id})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/agent/add', methods=['POST'])
+def add_agent():
+    name = request.json.get('name')
+    email = request.json.get('email')
+
+    if not name or not email:
+        return jsonify({'error': 'Missing name or email'}), 400
+
+    agent = agent_collection.find_one({'email': email})
+    if agent:
+        return jsonify({'error': 'Agent already exists'}), 400
+
+    # Insert the new agent into MongoDB
+    agent_collection.insert_one({
+        'name': name,
+        'email': email,
+    })
+    return jsonify({'success': True})
+
+@app.route('/api/auth/google', methods=['POST'])
+def google_login():
+    token = request.json.get('token')
+
+    if not token:
+        return jsonify({'error': 'Missing token'}), 400
+    
+    google_response = requests.get(f'https://oauth2.googleapis.com/tokeninfo?id_token={token}')
+
+    if google_response.status_code != 200:
+        return jsonify({'error': 'Invalid token'}), 400
+    
+
+    google_data = google_response.json()
+
+    email = google_data.get('email')
+    name = google_data.get('name')
+
+    if not email or not name:
+        return jsonify({"error": "Invalid token"}), 400
+    
+    agent = agent_collection.find_one({'email': email})
+
+    if not agent:
+        return jsonify({'error': 'Agent not found'}), 404
+    
+    payload = {
+        "user_id": str(agent['_id']),
+        "email": email,
+        "name": name,
+        "exp": datetime.utcnow() + timedelta(days=1)
+    }
+
+    jwt_token = jwt.encode(payload, os.getenv('JWT_SECRET'), algorithm='HS256')
+
+    response = make_response(jsonify({'success': True, "token": jwt_token, "user": {
+        "name": agent['name'],
+        "email": agent['email']
+    }}))
+    
+    response.set_cookie('access_token', jwt_token, httponly=True, samesite="None", secure=True)
+
+    return response
+
 
 @app.route('/ask', methods=['POST'])
 def ask_question():
