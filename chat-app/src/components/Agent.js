@@ -18,7 +18,6 @@ export default function Agent() {
             });
             const data = await res.json();
 
-            console.log("data", data)
             if (data.success) {
                 setUser(data.user);
                 toast.success('Login Success');
@@ -38,7 +37,7 @@ export default function Agent() {
         <>
             {
                 user ?
-                    <AgentDashboard user={user} />
+                    <AgentDashboard email={user.email} />
                     :
                     <GoogleLogin
                         onSuccess={credentialResponse => {
@@ -49,6 +48,8 @@ export default function Agent() {
                         }}
                     />
             }
+
+            {/* <AgentDashboard email="ashutoshasharsimains@gmail.com" /> */}
 
         </>
     )

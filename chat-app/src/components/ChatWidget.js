@@ -53,7 +53,7 @@ const ChatWidget = () => {
 
   useEffect(() => {
     if (threadId) {
-      socket.emit('join', { thread_id: threadId });
+      socket.emit('join', { thread_id: threadId, agent: false });
     }
     return () => {
       if (threadId) {
@@ -150,7 +150,7 @@ const ChatWidget = () => {
       setThreadId(data.thread_id);
       setIsInitial(false);
       setChatStatus('open');  // Ensure this line is present
-      socket.emit('join', { thread_id: data.thread_id });
+      socket.emit('join', { thread_id: data.thread_id, agent: false });
       appendMessage(message, 'user');
       setPendingUserMessages(new Set([message]));
       sendMessageToBackend(message, data.thread_id);
@@ -167,6 +167,8 @@ const ChatWidget = () => {
     const formData = new FormData();
     formData.append('thread_id', chatThreadId);
     formData.append('question', message);
+
+    console.log("thread_id", chatThreadId);
 
     fetch(`${API_BASE_URL}/ask`, {
       method: 'POST',
@@ -324,7 +326,7 @@ const ChatWidget = () => {
         }
       })
       .catch(error => console.error('Error fetching chat messages:', error));
-    socket.emit('join', { thread_id: selectedThreadId });
+    socket.emit('join', { thread_id: selectedThreadId, agent: false });
   };
 
   const handleScroll = () => {
