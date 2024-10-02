@@ -6,6 +6,7 @@ import { marked } from 'marked';
 import ImagePopup from './ImagePopup';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const API_BASE_URL = 'http://localhost:5000';
@@ -191,11 +192,14 @@ const ResolveForm = ({ onSubmit, onCancel }) => {
   );
 };
 
-const ChatHeader = React.memo(({ chat, onResolve, onViewSocietyDetails, showSocietyDetails, email }) => (
+const ChatHeader = React.memo(({ chat, onResolve, onViewSocietyDetails, showSocietyDetails, email, handleToggle, isToggled }) => (
   <div className="bg-indigo-600 text-white p-4 flex justify-between items-center">
     <h3 className="text-lg font-semibold">Chat {chat.thread_id.slice(0, 8)}...</h3>
     <span className="font-semibold text-white">Email: {email}</span>
+
     <div className="flex space-x-2">
+
+
       {chat.status === 'in_progress' && (
         <button
           onClick={onResolve}
@@ -216,7 +220,7 @@ const ChatHeader = React.memo(({ chat, onResolve, onViewSocietyDetails, showSoci
   </div>
 ));
 
-const ResolvePopup = ({ onSubmit, onCancel, email }) => (
+const ResolvePopup = ({ onSubmit, onCancel }) => (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
     <motion.div
       initial={{ scale: 0.9, opacity: 0 }}
@@ -237,6 +241,7 @@ const AgentDashboard = ({ email }) => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [isResolving, setIsResolving] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [isToggled, setIsToggled] = useState(true);
   const [showSocietyDetails, setShowSocietyDetails] = useState(false);
   const [isResolvingPopup, setIsResolvingPopup] = useState(false);
 
@@ -328,10 +333,12 @@ const AgentDashboard = ({ email }) => {
 
   const agentOnline = () => {
     socket.emit('agents_online', { email: email });
+    toast.success('Agent is online now');
   };
 
   const agentOffline = () => {
     socket.emit('agents_offline', { email: email });
+    toast.success('Agent is offline now');
   };
 
 
@@ -347,10 +354,6 @@ const AgentDashboard = ({ email }) => {
     };
 
   }, [selectedChat]);
-
-  const getActiveAgents = () => {
-    socket.emit('get_active_agents');
-  };
 
   const updateChatStatus = useCallback((threadId, status) => {
     setAgentChats(prevChats =>
@@ -459,16 +462,34 @@ const AgentDashboard = ({ email }) => {
     setShowSocietyDetails(prev => !prev);
   };
 
-  
+  const handleToggle = () => {
+    if (isToggled) {
+      agentOffline();
+    } else {
+      agentOnline();
+    }
+    setIsToggled(!isToggled);
+  }
 
   return (
     <div className="flex h-screen bg-gray-100 p-4 gap-4 font-sans">
       <div className="w-80 flex-shrink-0 bg-white rounded-lg shadow-md overflow-hidden flex flex-col">
-        <h2 className="text-xl font-bold p-4 bg-indigo-600 text-white">Agent Inbox </h2>
-        <div>
-        <button onClick={agentOnline}>Go online</button>
-          <button className="text-blue" onClick={getActiveAgents}>Active Agents</button>
-        <button onClick={agentOffline}>Go offline</button>
+        <div className="text-xl flex items-center justify-between font-bold p-4 bg-indigo-600 text-white">Agent Inbox
+          <label htmlFor="toggleB" className="flex items-center cursor-pointer">
+            <div className="relative">
+              <input
+                type="checkbox"
+                id="toggleB"
+                className="sr-only"
+                checked={isToggled}
+                onChange={handleToggle} // Toggle on checkbox change
+              />
+              <div className={`block w-14 h-8 rounded-full bg-gray-600`}></div>
+              <div
+                className={`dot absolute left-1 top-1 ${!isToggled ? "bg-white" : "transform translate-x-6 bg-green-500"} w-6 h-6 rounded-full transition`}
+              ></div>
+            </div>
+          </label>
         </div>
         <div className="p-4 border-b bg-gray-50">
           <div className="flex items-center mb-2">
@@ -506,6 +527,8 @@ const AgentDashboard = ({ email }) => {
                 onViewSocietyDetails={toggleSocietyDetails}
                 showSocietyDetails={showSocietyDetails}
                 email={email}
+                handleToggle={handleToggle}
+                isToggled={isToggled}
               />
               {isResolving ? (
                 <ResolveForm onSubmit={resolveChat} onCancel={handleResolutionCancel} />

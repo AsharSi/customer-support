@@ -102,6 +102,15 @@ def execute_run(thread_id, run_id):
                         
                         threads[thread_id]['messages'].append(agent_message)
 
+                        
+                        socketio.emit('new_message', {'thread_id': thread_id, 'message': agent_message}, room=thread_id)
+                        socketio.emit('agent_required', {'thread_id': thread_id})
+
+                        tool_outputs.append({
+                            "tool_call_id": tool_call.id,
+                            "output": json.dumps({"success": True, "message": "Connected to agent"})
+                        })
+
                     # agent_message = {
                     #     'role': 'system',
                     #     'content': 'Connecting you to an agent...',
