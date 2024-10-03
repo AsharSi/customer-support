@@ -242,6 +242,7 @@ const AgentDashboard = ({ email }) => {
   const [isResolving, setIsResolving] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [isToggled, setIsToggled] = useState(true);
+  const [agentThreads, setAgentThreads] = useState(null);
   const [showSocietyDetails, setShowSocietyDetails] = useState(false);
   const [isResolvingPopup, setIsResolvingPopup] = useState(false);
 
@@ -310,8 +311,17 @@ const AgentDashboard = ({ email }) => {
     socket.on('agent_connecter', (data) => {
       console.log('Agent connected', data);
     });
+
     socket.on('active_agents', (agents) => {
-      console.log('Active agents:', agents);
+
+      console.log('Active agents', agents);
+
+      for (let i = 0; i < agents.length; i++) {
+        if (agents[i].email === email) {
+          setAgentThreads(agents[i].thread_ids);
+          break;
+        }
+      }
     });
 
     const interval = setInterval(fetchAgentChats, 5000);
@@ -321,20 +331,20 @@ const AgentDashboard = ({ email }) => {
       socket.off('chat_resolved', handleChatResolved);
       socket.off('chat_reopened', handleChatReopened);
       socket.off('agent_required', handleAgentRequired);
+      socket.off('agent_connecter');
       socket.off('active_agents');
       clearInterval(interval);
     };
   }, [fetchAgentChats]);
 
-
   const switchAgent = (email, thread_id) => {
     socket.emit("agent_connecter", { email: email, thread_id: thread_id });
   }
 
-  const agentOnline = () => {
+  const agentOnline = useCallback(() => {
     socket.emit('agents_online', { email: email });
     toast.success('Agent is online now');
-  };
+  }, []);
 
   const agentOffline = () => {
     socket.emit('agents_offline', { email: email });
@@ -352,7 +362,6 @@ const AgentDashboard = ({ email }) => {
         socket.emit('leave', { thread_id: selectedChat.thread_id });
       }
     };
-
   }, [selectedChat]);
 
   const updateChatStatus = useCallback((threadId, status) => {
@@ -439,10 +448,13 @@ const AgentDashboard = ({ email }) => {
       // Then sort by last activity
       return new Date(b.last_activity) - new Date(a.last_activity);
     });
+
   }, [agentChats]);
 
   const filteredChats = useMemo(() => {
-    return sortedChats.filter(chat =>
+    const chats = agentThreads ? sortedChats.filter(chat => agentThreads.includes(chat.thread_id)) : sortedChats;
+
+    return chats.filter(chat =>
       statusFilter === 'all' ||
       chat.status === statusFilter ||
       (statusFilter === 'reopened' && chat.was_reopened)
