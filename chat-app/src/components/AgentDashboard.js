@@ -302,6 +302,8 @@ const AgentDashboard = ({ email }) => {
 
     const handleAgentRequired = () => {
       fetchAgentChats();
+
+      socket.emit("get_active_agents", { email: email });
     };
 
     socket.on('new_message', handleNewMessage);
