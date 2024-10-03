@@ -53,6 +53,7 @@ def assign_agent(thread_id):
         if agent['isOnline']:
             agent['current_thread_count'] += 1
             agent['thread_ids'].append(thread_id)
+
             return agent['email']
 
 
@@ -88,6 +89,7 @@ def execute_run(thread_id, run_id):
                         threads[thread_id]['messages'].append(agent_message)  
                         socketio.emit('new_message', {'thread_id': thread_id, 'message': agent_message}, room=thread_id)
                         socketio.emit('agent_required', {'thread_id': thread_id})
+                        # socketio.emit('active_agents', active_agents, broadcast=True)
 
                         tool_outputs.append({
                             "tool_call_id": tool_call.id,
@@ -490,7 +492,6 @@ def agent_connecter(data):
 
 @socketio.on('get_active_agents')
 def get_active_agents():
-
     emit('active_agents', active_agents, broadcast=True)
 
     
