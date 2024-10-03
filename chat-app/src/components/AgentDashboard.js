@@ -485,6 +485,12 @@ const AgentDashboard = ({ email }) => {
     setIsToggled(!isToggled);
   }
 
+  useEffect(() => {
+
+    socket.emit('agents_online', { email: email });
+
+  }, []);
+
   return (
     <div className="flex h-screen bg-gray-100 p-4 gap-4 font-sans">
       <div className="w-80 flex-shrink-0 bg-white rounded-lg shadow-md overflow-hidden flex flex-col">
