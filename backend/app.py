@@ -42,7 +42,6 @@ agent_collection = mongo.db.agents
 threads = {}
 active_agents = []
 
-
 def assign_agent(thread_id):
     if not active_agents:
         return None

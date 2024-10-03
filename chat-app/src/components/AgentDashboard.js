@@ -241,12 +241,14 @@ const AgentDashboard = ({ email }) => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [isResolving, setIsResolving] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
-  const [isToggled, setIsToggled] = useState(true);
+  const [isToggled, setIsToggled] = useState(false);
   const [agentThreads, setAgentThreads] = useState(null);
   const [showSocietyDetails, setShowSocietyDetails] = useState(false);
   const [isResolvingPopup, setIsResolvingPopup] = useState(false);
 
   const fetchAgentChats = useCallback(() => {
+    socket.emit("get_active_agents");
+
     fetch(`${API_BASE_URL}/get_agent_chats`)
       .then(response => response.json())
       .then(data => {
@@ -267,6 +269,7 @@ const AgentDashboard = ({ email }) => {
         });
       })
       .catch(error => console.error('Error fetching agent chats:', error));
+
   }, []);
 
   useEffect(() => {
@@ -303,7 +306,6 @@ const AgentDashboard = ({ email }) => {
     const handleAgentRequired = () => {
       fetchAgentChats();
 
-      socket.emit("get_active_agents", { email: email });
     };
 
     socket.on('new_message', handleNewMessage);
@@ -487,7 +489,7 @@ const AgentDashboard = ({ email }) => {
 
   useEffect(() => {
 
-    socket.emit('agents_online', { email: email });
+    socket.emit('agent_offline', { email: email });
 
   }, []);
 
