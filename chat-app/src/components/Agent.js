@@ -1,5 +1,5 @@
 import AgentDashboard from "./AgentDashboard"
-import { GoogleLogin } from '@react-oauth/google';
+import { GoogleLogin, googleLogout } from '@react-oauth/google';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 
@@ -16,7 +16,10 @@ export default function Agent() {
                 },
                 body: JSON.stringify({ token: response.credential }),
             });
+
             const data = await res.json();
+
+            console.log(data);
 
             if (data.success) {
                 setUser(data.user);
@@ -25,10 +28,11 @@ export default function Agent() {
                 toast.error('Login Failed');
                 console.log('Login Failed');
                 setUser(null);
-                
+
             }
         } catch (error) {
             setUser(null);
+            toast.error("login failed");
             console.log(error);
         }
     }
@@ -39,14 +43,21 @@ export default function Agent() {
                 user ?
                     <AgentDashboard email={user.email} />
                     :
-                    <GoogleLogin
-                        onSuccess={credentialResponse => {
-                            handleLogin(credentialResponse);
-                        }}
-                        onError={() => {
-                            console.log('Login Failed');
-                        }}
-                    />
+                    <>
+                        <GoogleLogin
+                            onSuccess={credentialResponse => {
+                                console.log(credentialResponse);
+                                handleLogin(credentialResponse);
+                            }}
+                            onError={() => {
+                                console.log('Login Failed');
+                            }}
+                        />
+
+                        <button onClick={() => googleLogout()}>
+                            Logout
+                        </button>
+                    </>
             }
 
             {/* <AgentDashboard email="ashutoshasharsimains@gmail.com" /> */}

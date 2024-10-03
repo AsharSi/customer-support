@@ -4,3 +4,8 @@ python-dotenv
 openai
 Flask-Dance
 flask-socketio
+tenacity
+Werkzeug
+requests
+jwt
+flask-pymongo
