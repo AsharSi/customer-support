@@ -27,6 +27,7 @@ if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
 
 app.config["MONGO_URI"] = os.getenv("MONGO_URI")
+app.config["JWT_SECRET"] = os.getenv("JWT_SECRET")
 
 client = AzureOpenAI(
     azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),

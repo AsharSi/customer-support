@@ -7,5 +7,5 @@ flask-socketio
 tenacity
 Werkzeug
 requests
-jwt
 flask-pymongo
+PyJWT
