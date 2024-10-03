@@ -89,7 +89,6 @@ def execute_run(thread_id, run_id):
                         threads[thread_id]['messages'].append(agent_message)  
                         socketio.emit('new_message', {'thread_id': thread_id, 'message': agent_message}, room=thread_id)
                         socketio.emit('agent_required', {'thread_id': thread_id})
-                        # socketio.emit('active_agents', active_agents, broadcast=True)
 
                         tool_outputs.append({
                             "tool_call_id": tool_call.id,
